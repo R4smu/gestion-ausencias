@@ -16,7 +16,7 @@ export default function Directivo() {
       <div className="bg-white p-6 rounded-lg shadow mb-8">
         <h3 className="text-xl font-bold mb-4">Calendario Global de Ausencias</h3>
         <div className="h-48 bg-gray-100 rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-500">
-          [Aquí se integrará el componente React-Calendar]
+
         </div>
       </div>
 
