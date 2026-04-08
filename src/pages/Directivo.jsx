@@ -4,6 +4,10 @@ import 'react-calendar/dist/Calendar.css';
 
 export default function Directivo() {
   const [fechaSeleccionada, setFechaSeleccionada] = useState(new Date());
+  
+  // Estado para gestionar las peticiones seleccionadas masivamente y los feedbacks
+  const [seleccionadas, setSeleccionadas] = useState([]);
+  const [feedbacks, setFeedbacks] = useState({});
 
   const hoy = new Date();
   const mañana = new Date(hoy);
@@ -16,7 +20,8 @@ export default function Directivo() {
   ];
 
   const peticionesPendientes = [
-    { id: 101, docente: 'Pedro Sánchez', fecha: '2023-12-05', motivo: 'Formación' },
+    { id: 101, docente: 'Pedro Sánchez', fecha: '2023-12-05', motivo: 'Formación', adjunto: true },
+    { id: 102, docente: 'María López', fecha: '2023-12-06', motivo: 'Asuntos Personales', adjunto: false },
   ];
 
   const mostrarAusenciasEnCalendario = ({ date, view }) => {
@@ -24,7 +29,6 @@ export default function Directivo() {
       const ausenciasDelDia = ausenciasAprobadas.filter(
         (ausencia) => ausencia.fecha.toDateString() === date.toDateString()
       );
-
       if (ausenciasDelDia.length > 0) {
         return (
           <div className="mt-1 flex flex-col gap-1">
@@ -38,21 +42,42 @@ export default function Directivo() {
     return null;
   };
 
+  // Lógicas de resolución individual y masiva
   const resolverPeticion = (id, accion) => {
-    alert(`Petición ${id} ${accion}`);
+    const comentario = feedbacks[id] || "Sin comentarios";
+    alert(`Petición ${id} ${accion}.\nFeedback: ${comentario}`);
+  };
+
+  const resolverMasivo = (accion) => {
+    if (seleccionadas.length === 0) return alert("Selecciona al menos una petición.");
+    alert(`Se han ${accion} ${seleccionadas.length} peticiones de forma masiva.`);
+    setSeleccionadas([]);
+  };
+
+  const toggleSeleccion = (id) => {
+    if (seleccionadas.includes(id)) {
+      setSeleccionadas(seleccionadas.filter(item => item !== id));
+    } else {
+      setSeleccionadas([...seleccionadas, id]);
+    }
+  };
+
+  const seleccionarTodas = () => {
+    if (seleccionadas.length === peticionesPendientes.length) {
+      setSeleccionadas([]);
+    } else {
+      setSeleccionadas(peticionesPendientes.map(p => p.id));
+    }
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto">
       <h2 className="text-3xl font-bold mb-6">Jefatura de Estudios</h2>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-        
         {/* Calendario Global */}
         <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow">
           <h3 className="text-xl font-bold mb-4">Calendario Global de Ausencias</h3>
-          
-          {/* estilos para el contenedor */}
           <div className="flex justify-center [&_.react-calendar]:border-none [&_.react-calendar]:w-full [&_.react-calendar]:font-sans [&_.react-calendar__tile--active]:bg-blue-600 [&_.react-calendar__tile--active]:text-white [&_.react-calendar__tile]:rounded-md [&_.react-calendar__tile]:p-2 [&_.react-calendar__tile:hover]:bg-blue-50">
             <Calendar 
               onChange={setFechaSeleccionada} 
@@ -68,7 +93,6 @@ export default function Directivo() {
           <h3 className="text-lg font-bold mb-4 text-gray-800">
             Ausencias del {fechaSeleccionada.toLocaleDateString()}
           </h3>
-          
           <ul className="flex flex-col gap-3">
             {ausenciasAprobadas
               .filter(a => a.fecha.toDateString() === fechaSeleccionada.toDateString())
@@ -78,9 +102,8 @@ export default function Directivo() {
                   <p className="text-sm text-gray-600">{ausencia.motivo}</p>
                 </li>
             ))}
-            
             {ausenciasAprobadas.filter(a => a.fecha.toDateString() === fechaSeleccionada.toDateString()).length === 0 && (
-              <p className="text-sm text-gray-500 italic">No hay ausencias planificadas para este día.</p>
+              <p className="text-sm text-gray-500 italic">No hay ausencias planificadas.</p>
             )}
           </ul>
         </div>
@@ -88,44 +111,67 @@ export default function Directivo() {
 
       {/* Gestor de Peticiones Pendientes */}
       <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-xl font-bold mb-4">Peticiones Pendientes de Resolución</h3>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+          <h3 className="text-xl font-bold">Gestor de Peticiones</h3>
+          
+          {/* Botones de Acción Masiva */}
+          <div className="flex gap-2">
+            <button onClick={() => resolverMasivo('aprobado')} className="bg-green-600 text-white px-4 py-2 rounded text-sm hover:bg-green-700 transition">
+              Aprobar Seleccionadas
+            </button>
+            <button onClick={() => resolverMasivo('denegado')} className="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700 transition">
+              Denegar Seleccionadas
+            </button>
+          </div>
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-100">
+                <th className="p-3 border-b text-center">
+                  <input type="checkbox" checked={seleccionadas.length === peticionesPendientes.length && peticionesPendientes.length > 0} onChange={seleccionarTodas} />
+                </th>
                 <th className="p-3 border-b">Docente</th>
-                <th className="p-3 border-b">Fecha</th>
-                <th className="p-3 border-b">Motivo</th>
+                <th className="p-3 border-b">Fecha y Motivo</th>
+                <th className="p-3 border-b text-center">Doc.</th>
+                <th className="p-3 border-b">Feedback / Comentarios</th>
                 <th className="p-3 border-b">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {peticionesPendientes.map(req => (
                 <tr key={req.id} className="border-b hover:bg-gray-50">
+                  <td className="p-3 text-center">
+                    <input type="checkbox" checked={seleccionadas.includes(req.id)} onChange={() => toggleSeleccion(req.id)} />
+                  </td>
                   <td className="p-3 font-medium">{req.docente}</td>
-                  <td className="p-3">{req.fecha}</td>
-                  <td className="p-3">{req.motivo}</td>
+                  <td className="p-3">
+                    <div>{req.fecha}</div>
+                    <div className="text-xs text-gray-500">{req.motivo}</div>
+                  </td>
+                  <td className="p-3 text-center">
+                    {req.adjunto ? <span className="text-blue-600 cursor-pointer text-sm font-semibold underline">Ver</span> : <span className="text-gray-400 text-xs">-</span>}
+                  </td>
+                  <td className="p-3">
+                    <input 
+                      type="text" 
+                      placeholder="Añadir comentario..." 
+                      className="border p-1 w-full text-sm rounded"
+                      value={feedbacks[req.id] || ''}
+                      onChange={(e) => setFeedbacks({...feedbacks, [req.id]: e.target.value})}
+                    />
+                  </td>
                   <td className="p-3 flex gap-2">
-                    <button 
-                      onClick={() => resolverPeticion(req.id, 'Aprobada')}
-                      className="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600 transition"
-                    >
-                      Aprobar
+                    <button onClick={() => resolverPeticion(req.id, 'Aprobada')} className="bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600">
+                      ✓
                     </button>
-                    <button 
-                      onClick={() => resolverPeticion(req.id, 'Denegada')}
-                      className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600 transition"
-                    >
-                      Denegar
+                    <button onClick={() => resolverPeticion(req.id, 'Denegada')} className="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600">
+                      ✕
                     </button>
                   </td>
                 </tr>
               ))}
-              {peticionesPendientes.length === 0 && (
-                <tr>
-                  <td colSpan="4" className="p-4 text-center text-gray-500">No hay peticiones pendientes.</td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
