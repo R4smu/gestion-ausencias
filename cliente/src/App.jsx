@@ -19,7 +19,7 @@ function AppRoutes() {
     <>
       {user && (
         <nav className="bg-gray-800 text-white p-4 flex justify-between items-center">
-          <span className="font-bold">App Ausencias IES - {user.name}</span>
+          <span className="font-bold">App Ausencias IES Albarregas - {user.name}</span>
           <button onClick={logout} className="bg-red-600 px-4 py-1 rounded">Cerrar Sesión</button>
         </nav>
       )}
